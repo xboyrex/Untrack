@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Untrack</string>
+    <string name="app_tagline">Clean URLs • Zero Tracking</string>
+    <string name="share_clean_label">Untrack • Clean &amp; Fix Link</string>
+    <string name="browser_interceptor_label">Untrack Link Shield</string>
+    <string name="process_text_label">Untrack Link</string>
+</resources>

@@ -1,0 +1,179 @@
+package com.xboyrex.untrack.fxengine.cleaners.impl
+
+import com.xboyrex.untrack.fxengine.cleaners.CleanerCategory
+import com.xboyrex.untrack.fxengine.cleaners.UrlCleaner
+import com.xboyrex.untrack.fxengine.processing.PlatformDomainConverter
+import com.xboyrex.untrack.fxengine.utils.Constants
+import java.net.URI
+import java.util.Locale
+
+/**
+ * Canonical first-party post cleanup, with selective cleanup for other routes and proxies.
+ */
+object TwitterCleaner : UrlCleaner {
+    override val id = "twitter"
+    override val displayName = "Twitter/X"
+    override val priority = UrlCleaner.PRIORITY_CONVERSION
+    override val category = CleanerCategory.SOCIAL_MEDIA
+    
+    private val postPath = Regex(
+        "^/(?:[A-Za-z0-9_]{1,15}/status|i/web/status)/[1-9][0-9]*(?:/(?:photo|video)/[1-9][0-9]*)?/?$"
+    )
+
+    // Fallback for routes and proxy services whose query may carry other functions.
+    private val twitterTracking = setOf(
+        // Basic tracking
+        "s", "t", "ref_src", "ref_url", "via", 
+        "__twitter_impression", "cn", "src",
+        
+        // Share & referral tracking
+        "share", "shared_via", "ref", "referer",
+        "twclid", "twgr", "twcamp", "twterm",
+        
+        // Analytics & attribution
+        "impression_id", "promoted_content", "click_id",
+        "attribution_id", "attribution_link", "source",
+        
+        // Timeline & feed tracking
+        "timeline_id", "tweet_mode", "tweet_result_type",
+        "include_entities", "include_rts", "exclude_replies",
+        
+        // Engagement tracking
+        "like_source", "retweet_source", "reply_source",
+        "follow_source", "unfollow_source", "block_source",
+        
+        // Navigation tracking
+        "nav_source", "entry_point", "surface", "trigger",
+        "context", "mx", "mi", "mk", "mz",
+        
+        // Mobile app tracking
+        "app", "app_name", "app_id", "device_id",
+        "install_id", "advertising_id", "limit_ad_tracking",
+        
+        // A/B testing & experiments
+        "variant", "bucket", "experiment", "treatment",
+        "version_id", "rollout_hash", "test_group",
+        
+        // Session & request tracking
+        "session_id", "request_id", "query_id",
+        "cursor", "max_id", "since_id", "count",
+        
+        // Card & media tracking
+        "card_name", "card_url", "media_id",
+        "media_tags", "tagged_users", "place_id",
+        
+        // Notification tracking
+        "notif_id", "notif_type", "notif_source",
+        "push_id", "email_id", "sms_id",
+        
+        // Search & discovery
+        "q_source", "result_type", "vertical",
+        "f", "src_hashtag", "src_trend",
+        
+        // Ads & promoted content
+        "ad_id", "campaign_id", "creative_id",
+        "advertiser_id", "placement_id", "targeting_criteria",
+        
+        // Twitter Blue / Premium tracking
+        "premium_source", "subscription_source", "feature_source",
+        "blue_verified", "premium_tier",
+        
+        // Legacy parameters
+        "tw_p", "tw_i", "tw_u", "tw_o",
+        "original_referer", "uprof"
+    )
+    
+    // Parameters essential for Twitter functionality
+    private val preserveParams = setOf(
+        "lang",        // Language preference
+        "theme",       // Dark/light theme
+        "display",     // Display preferences
+        "tz",          // Timezone
+        "include_profile_interstitial_type", // Profile display
+        "include_blocking", // Blocking info
+        "include_blocked_by", // Blocked by info
+        "include_followed_by", // Following info
+        "include_want_retweets", // Retweet preferences
+        "include_mute_edge", // Mute preferences
+        "include_can_dm" // DM permissions
+    )
+    
+    override fun matches(url: String): Boolean = PlatformDomainConverter.isKnownXUrl(url)
+    
+    override fun clean(url: String): String {
+        if (!matches(url)) return url
+
+        try {
+            cleanCanonicalPermalink(url)?.let { return it }
+
+            // If no query parameters, return as is
+            val idx = url.indexOf('?')
+            if (idx == -1 || url.indexOf('#').let { it >= 0 && it < idx }) {
+                return url
+            }
+            
+            val base = url.substring(0, idx)
+            val queryAndFragment = url.substring(idx + 1)
+            
+            // Handle fragment
+            val fragmentIdx = queryAndFragment.indexOf('#')
+            val query = if (fragmentIdx > -1) {
+                queryAndFragment.substring(0, fragmentIdx)
+            } else {
+                queryAndFragment
+            }
+            val fragment = if (fragmentIdx > -1) {
+                queryAndFragment.substring(fragmentIdx)
+            } else {
+                ""
+            }
+            
+            // Process parameters - remove known tracking, keep everything else
+            val kept = query.split('&').mapNotNull { pair ->
+                val eqIdx = pair.indexOf('=')
+                val key = if (eqIdx == -1) pair else pair.substring(0, eqIdx)
+                
+                // Keep essential and unknown params, remove only known tracking
+                when {
+                    preserveParams.contains(key) -> pair  // Always keep essential params
+                    twitterTracking.contains(key) -> null  // Remove tracking params
+                    else -> pair
+                }
+            }.filter { it.isNotEmpty() }
+            
+            return if (kept.isEmpty()) {
+                base + fragment
+            } else {
+                base + "?" + kept.joinToString("&") + fragment
+            }
+        } catch (e: Exception) {
+            // On error, return original URL
+            return url
+        }
+    }
+
+    /**
+     * A complete post path identifies the content without rotating share parameters.
+     * Retain existing functional options and photo/video path selectors. Proxy URLs
+     * and special/incomplete routes keep the selective policy above.
+     */
+    private fun cleanCanonicalPermalink(url: String): String? {
+        val uri = runCatching { URI(url) }.getOrNull() ?: return null
+        val scheme = uri.scheme?.lowercase(Locale.ROOT)
+        if (scheme != "https" && scheme != "http") return null
+        if (uri.rawUserInfo != null || uri.port !in listOf(-1, if (scheme == "https") 443 else 80)) return null
+        val host = uri.host?.lowercase(Locale.ROOT) ?: return null
+        // An explicitly empty port also parses as -1; do not treat it as canonical.
+        if (uri.port == -1 && !uri.rawAuthority.equals(host, ignoreCase = true)) return null
+        if (listOf(Constants.X_DOMAIN, Constants.TWITTER_DOMAIN).none { domain ->
+                host == domain || host == "www.$domain" || host == "mobile.$domain" || host == "m.$domain"
+            }) return null
+        if (!postPath.matches(uri.rawPath.orEmpty())) return null
+
+        val kept = uri.rawQuery.orEmpty().split('&').filter { pair ->
+            pair.substringBefore('=') in preserveParams
+        }
+        val base = url.substringBefore('?').substringBefore('#')
+        return base + if (kept.isEmpty()) "" else "?" + kept.joinToString("&")
+    }
+}

@@ -1,0 +1,204 @@
+package com.xboyrex.untrack.fxengine.processing
+
+import com.xboyrex.untrack.fxengine.utils.Constants
+import java.net.IDN
+import java.util.Locale
+import javax.inject.Inject
+import javax.inject.Singleton
+
+data class NormalizedUrl(
+    val comparisonUrl: String,
+    val scheme: String,
+    val rawAuthority: String,
+    val userInfo: String?,
+    val asciiHost: String,
+    val port: Int?,
+    val rawPath: String,
+    val rawQuery: String?,
+    val rawFragment: String?
+) {
+    val cycleKey: String
+        get() = buildString {
+            append(scheme)
+            append("://")
+            append(asciiHost)
+            if (port != null) append(":$port")
+            append(rawPath)
+            if (rawQuery != null) append('?').append(rawQuery)
+            if (rawFragment != null) append('#').append(rawFragment)
+        }
+}
+
+/**
+ * Structural HTTP(S) parser that never decodes path, query, or fragment.
+ */
+@Singleton
+class UrlNormalizer @Inject constructor() {
+    fun normalize(input: String): NormalizedUrl {
+        val value = input.trim().removePrefix("@")
+        require(value.length <= Constants.MAX_URL_LENGTH) { "URL is too long" }
+        require(value.none { it == '\\' || it.code == 0 || it.code in 1..31 }) {
+            "URL contains invalid characters"
+        }
+
+        val schemeEnd = value.indexOf("://")
+        require(schemeEnd > 0) { "URL must be absolute" }
+        val scheme = value.substring(0, schemeEnd).lowercase(Locale.ROOT)
+        require(scheme == "http" || scheme == "https") { "Only HTTP(S) URLs are supported" }
+
+        val authorityStart = schemeEnd + 3
+        val authorityEnd = value.indexOfAny(charArrayOf('/', '?', '#'), authorityStart)
+            .let { if (it == -1) value.length else it }
+        val authority = value.substring(authorityStart, authorityEnd)
+        require(authority.isNotBlank()) { "URL host is required" }
+
+        val at = authority.lastIndexOf('@')
+        val userInfo = authority.takeIf { at >= 0 }?.substring(0, at)
+        val hostPort = authority.substring(at + 1)
+        val (rawHost, port) = parseHostPort(hostPort)
+        val asciiHost = if (rawHost.contains(':')) {
+            rawHost.lowercase(Locale.ROOT)
+        } else {
+            IDN.toASCII(rawHost.removeSuffix("."), IDN.USE_STD3_ASCII_RULES)
+                .lowercase(Locale.ROOT)
+        }
+        require(asciiHost.isNotBlank()) { "URL host is required" }
+
+        val fragmentIndex = value.indexOf('#', authorityEnd)
+        val queryIndex = value.indexOf('?', authorityEnd)
+            .takeIf { it >= 0 && (fragmentIndex < 0 || it < fragmentIndex) } ?: -1
+        val pathEnd = listOf(queryIndex, fragmentIndex).filter { it >= 0 }.minOrNull() ?: value.length
+        val rawPath = value.substring(authorityEnd, pathEnd)
+        val rawQuery = if (queryIndex >= 0) {
+            value.substring(queryIndex + 1, if (fragmentIndex >= 0) fragmentIndex else value.length)
+        } else {
+            null
+        }
+        val rawFragment = if (fragmentIndex >= 0) value.substring(fragmentIndex + 1) else null
+
+        return NormalizedUrl(
+            comparisonUrl = value,
+            scheme = scheme,
+            rawAuthority = authority,
+            userInfo = userInfo,
+            asciiHost = asciiHost,
+            port = port,
+            rawPath = rawPath,
+            rawQuery = rawQuery,
+            rawFragment = rawFragment
+        )
+    }
+
+    fun isValidHttpUrl(value: String): Boolean = runCatching { normalize(value) }.isSuccess
+
+    companion object {
+        /**
+         * Extract an ASCII hostname without decoding URL components.
+         *
+         * This deliberately accepts scheme-less authorities for lightweight domain checks,
+         * while rejecting explicit non-HTTP(S) schemes.
+         */
+        fun extractAsciiHost(url: String): String? = runCatching {
+            val value = url.trim()
+            if (value.isBlank()) return@runCatching null
+
+            val schemeEnd = value.indexOf("://")
+            val authorityStart = if (schemeEnd >= 0) {
+                val scheme = value.substring(0, schemeEnd)
+                if (!scheme.equals("http", ignoreCase = true) &&
+                    !scheme.equals("https", ignoreCase = true)
+                ) {
+                    return@runCatching null
+                }
+                schemeEnd + 3
+            } else {
+                0
+            }
+            val authorityEnd = value.indexOfAny(charArrayOf('/', '?', '#'), authorityStart)
+                .let { if (it == -1) value.length else it }
+            val authority = value.substring(authorityStart, authorityEnd)
+            val hostPort = authority.substringAfterLast('@')
+            if (hostPort.isBlank()) return@runCatching null
+
+            val host = when {
+                hostPort.startsWith("[") -> {
+                    val close = hostPort.indexOf(']')
+                    if (close <= 1) return@runCatching null
+                    val suffix = hostPort.substring(close + 1)
+                    if (suffix.isNotEmpty() &&
+                        (!suffix.startsWith(':') ||
+                            suffix.substring(1).isEmpty() ||
+                            !suffix.substring(1).all(Char::isDigit))
+                    ) {
+                        return@runCatching null
+                    }
+                    hostPort.substring(1, close)
+                }
+                else -> {
+                    val colon = hostPort.lastIndexOf(':')
+                    if (colon > 0 &&
+                        hostPort.indexOf(':') == colon &&
+                        hostPort.substring(colon + 1).isNotEmpty() &&
+                        hostPort.substring(colon + 1).all(Char::isDigit)
+                    ) {
+                        hostPort.substring(0, colon)
+                    } else {
+                        hostPort
+                    }
+                }
+            }.removeSuffix(".")
+            if (host.isBlank()) return@runCatching null
+
+            if (host.contains(':')) {
+                host.lowercase(Locale.ROOT)
+            } else {
+                IDN.toASCII(host, IDN.USE_STD3_ASCII_RULES).lowercase(Locale.ROOT)
+            }
+        }.getOrNull()
+
+        fun hostMatchesDomain(host: String?, domain: String): Boolean {
+            val normalizedDomain = domain.trim().lowercase(Locale.ROOT).removePrefix(".")
+            return host != null &&
+                normalizedDomain.isNotBlank() &&
+                (host == normalizedDomain || host.endsWith(".$normalizedDomain"))
+        }
+
+        fun urlMatchesDomain(url: String, domain: String): Boolean =
+            hostMatchesDomain(extractAsciiHost(url), domain)
+
+        fun urlMatchesAnyDomain(url: String, domains: Collection<String>): Boolean {
+            val host = extractAsciiHost(url)
+            return domains.any { hostMatchesDomain(host, it) }
+        }
+    }
+
+    private fun parseHostPort(hostPort: String): Pair<String, Int?> {
+        if (hostPort.startsWith("[")) {
+            val close = hostPort.indexOf(']')
+            require(close > 1) { "Invalid IPv6 host" }
+            val host = hostPort.substring(1, close)
+            val suffix = hostPort.substring(close + 1)
+            val port = when {
+                suffix.isEmpty() -> null
+                suffix.startsWith(":") -> parsePort(suffix.substring(1))
+                else -> throw IllegalArgumentException("Invalid authority")
+            }
+            return host to port
+        }
+
+        val colon = hostPort.lastIndexOf(':')
+        if (colon <= 0 || hostPort.indexOf(':') != colon) return hostPort to null
+        val possiblePort = hostPort.substring(colon + 1)
+        return if (possiblePort.all(Char::isDigit)) {
+            hostPort.substring(0, colon) to parsePort(possiblePort)
+        } else {
+            hostPort to null
+        }
+    }
+
+    private fun parsePort(value: String): Int {
+        val port = value.toIntOrNull() ?: throw IllegalArgumentException("Invalid port")
+        require(port in 1..65535) { "Invalid port" }
+        return port
+    }
+}

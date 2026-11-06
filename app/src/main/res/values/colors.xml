@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#FFFFFF</color>
+    <color name="untrack_green">#1DB954</color>
+    <color name="untrack_dark">#0D0F0E</color>
+</resources>

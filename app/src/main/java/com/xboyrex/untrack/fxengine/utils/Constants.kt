@@ -1,0 +1,250 @@
+package com.xboyrex.untrack.fxengine.utils
+
+/**
+ * Constants used throughout the app
+ */
+object Constants {
+    // Donation URL
+    const val DONATION_URL = "https://github.com/xboyrex"
+    
+    // Monero donation address
+    const val MONERO_ADDRESS = "45TiAPismHb5TbJdX5iscCShfwQ9gSZyMcxKXjjEyabjf98dV2y8F7SHaConCAUkqUNbHuCKZk4NE4d6xpiCBRvMNPEWu1b"
+    
+    // Company URLs
+    const val WEBSITE_URL = "https://github.com/xboyrex"
+    const val GITHUB_URL = "https://github.com/xboyrex"
+    const val GITHUB_REPOSITORY_URL = "$GITHUB_URL/Untrack"
+    const val RELEASE_NOTES_URL = "$GITHUB_REPOSITORY_URL/blob/main/docs/RELEASE_NOTES.md"
+    private const val BUG_REPORT_EMAIL_LOCAL_PART = "xboyrex496"
+    private const val BUG_REPORT_EMAIL_DOMAIN = "gmail.com"
+    val BUG_REPORT_EMAIL = "$BUG_REPORT_EMAIL_LOCAL_PART@$BUG_REPORT_EMAIL_DOMAIN"
+    const val HELP_URL = "$GITHUB_REPOSITORY_URL/blob/main/docs/HELP.md"
+    const val BROWSER_MODE_GUIDE_URL = "$HELP_URL#browser-mode"
+    const val BROWSER_PROBE_URL = "http://example.com"
+    const val CUSTOM_RULES_GUIDE_URL = "$HELP_URL#custom-rules"
+    
+    // Domain identifiers
+    const val INSTAGRAM_DOMAIN = "instagram.com"
+    // Primary proxies — embed media + post/reel title & description
+    const val TOINSTAGRAM_DOMAIN = "toinstagram.com"
+    const val ADAMLIKES_DOMAIN = "adamlikes.men"
+    // Backup proxies — embed media only (no title/description)
+    const val INSTAGRAM7_DOMAIN = "instagram7.com"
+    val INSTAGRAM_PRIMARY_PROXIES = listOf(TOINSTAGRAM_DOMAIN, ADAMLIKES_DOMAIN)
+    val INSTAGRAM_BACKUP_PROXIES = listOf(INSTAGRAM7_DOMAIN)
+    // Built-in (fixed) proxies offered in the chooser, in UI order.
+    // User-defined custom proxies live in InstagramProxyStore, NOT here.
+    val INSTAGRAM_PROXY_DOMAINS = INSTAGRAM_PRIMARY_PROXIES + INSTAGRAM_BACKUP_PROXIES
+    const val INSTAGRAM_DEFAULT_PROXY = TOINSTAGRAM_DOMAIN
+    // Legacy proxies (no longer offered, but still detected so existing pasted links auto-convert)
+    val INSTAGRAM_LEGACY_PROXIES = listOf("eeinstagram.com")
+    const val TWITTER_DOMAIN = "twitter.com"
+    const val X_DOMAIN = "x.com"
+    const val FIXUPX_DOMAIN = "fixupx.com"
+    const val FXTWITTER_DOMAIN = "fxtwitter.com"
+    const val VXTWITTER_DOMAIN = "vxtwitter.com"
+    val TWITTER_PROXY_DOMAINS = listOf(FIXUPX_DOMAIN, FXTWITTER_DOMAIN, VXTWITTER_DOMAIN)
+    const val FACEBOOK_DOMAIN = "facebook.com"
+    const val FB_SHORT_DOMAIN = "fb.com"
+    // Domain constants retained for settings migration and custom-proxy rejection.
+    const val KKINSTAGRAM_DOMAIN = "kkinstagram.com"
+    const val FACEBOOKEZ_DOMAIN = "facebookez.com"
+    // Retired unsafe frontends (2026-07 security audit): facebookez.com redirects to an
+    // adware network; kkinstagram.com is flagged by multiple reputation services.
+    // They are no longer specially detected or converted and cannot be selected; like any
+    // unknown URL, they receive only generic tracking cleaning.
+    val RETIRED_UNSAFE_FRONTEND_DOMAINS = listOf(FACEBOOKEZ_DOMAIN, KKINSTAGRAM_DOMAIN)
+    const val FACEBOOK_LINK_SHIM_DOMAIN = "l.facebook.com"
+    const val FACEBOOK_MOBILE_LINK_SHIM_DOMAIN = "lm.facebook.com"
+    const val BLUESKY_DOMAIN = "bsky.app"
+    const val FXBSKY_DOMAIN = "fxbsky.app"
+    const val BLUESKY_GO_DOMAIN = "go.bsky.app"
+
+    // TikTok + embed proxies (v1.7.0)
+    // NOTE: kktiktok.com and vxtiktok.com contain "tiktok.com" as a substring —
+    // proxy checks must run before (or be combined with) plain tiktok.com checks.
+    const val TIKTOK_DOMAIN = "tiktok.com"
+    // Primary proxies — embed videos AND multi-image slideshows, with post stats
+    const val TNKTOK_DOMAIN = "tnktok.com"
+    const val TFXKTOK_DOMAIN = "tfxktok.com"
+    // Backup proxies — tiktokez.com embeds media like the primaries;
+    // kktiktok.com embeds the video only (no slideshows, no stats)
+    const val TIKTOKEZ_DOMAIN = "tiktokez.com"
+    const val KKTIKTOK_DOMAIN = "kktiktok.com"
+    val TIKTOK_PRIMARY_PROXIES = listOf(TNKTOK_DOMAIN, TFXKTOK_DOMAIN)
+    val TIKTOK_BACKUP_PROXIES = listOf(TIKTOKEZ_DOMAIN, KKTIKTOK_DOMAIN)
+    // Built-in (fixed) proxies offered in the chooser, in UI order.
+    // User-defined custom proxies live in TikTokProxyStore, NOT here.
+    val TIKTOK_PROXY_DOMAINS = TIKTOK_PRIMARY_PROXIES + TIKTOK_BACKUP_PROXIES
+    const val TIKTOK_DEFAULT_PROXY = TNKTOK_DOMAIN
+    // Legacy proxies (dead services, but still detected so old pasted links auto-convert)
+    val TIKTOK_LEGACY_PROXIES = listOf("vxtiktok.com", "tiktxk.com")
+
+    // Other services (native-app mapping / cleaner dispatch)
+    const val YOUTUBE_DOMAIN = "youtube.com"
+    const val YOUTUBE_SHORT_DOMAIN = "youtu.be"
+    const val REDDIT_DOMAIN = "reddit.com"
+    const val REDDIT_SHORT_DOMAIN = "redd.it"
+    const val LINKEDIN_DOMAIN = "linkedin.com"
+    const val LINKEDIN_SHORT_DOMAIN = "lnkd.in"
+    const val AMAZON_DOMAIN = "amazon.com"
+    const val AMAZON_SHORT_DOMAIN = "amzn.to"
+    const val SUBSTACK_DOMAIN = "substack.com"
+    const val GOOGLE_DOMAIN = "google.com"
+    const val GOOGLE_MAPS_DOMAIN = "maps.google.com"
+    const val GOOGLE_ADSERVICES_DOMAIN = "googleadservices.com"
+    const val GOOGLE_STORE_DOMAIN = "store.google.com"
+    const val REDDITMAIL_CLICK_DOMAIN = "click.redditmail.com"
+    const val WIKIPEDIA_DOMAIN = "wikipedia.org"
+    const val GUARDIAN_DOMAIN = "theguardian.com"
+    const val GUARDIAN_WWW_DOMAIN = "www.theguardian.com"
+    const val NYTIMES_DOMAIN = "nytimes.com"
+    const val NYTIMES_WWW_DOMAIN = "www.nytimes.com"
+    const val THREADS_NET_DOMAIN = "threads.net"
+    const val THREADS_COM_DOMAIN = "threads.com"
+    const val TWITCH_DOMAIN = "twitch.tv"
+    const val SPOTIFY_DOMAIN = "spotify.com"
+    const val PINTEREST_DOMAIN = "pinterest.com"
+    const val SNAPCHAT_DOMAIN = "snapchat.com"
+    const val WHATSAPP_DOMAIN = "whatsapp.com"
+    const val MEDIUM_DOMAIN = "medium.com"
+    const val BING_DOMAIN = "bing.com"
+    const val DUCKDUCKGO_DOMAIN = "duckduckgo.com"
+    const val EBAY_COM_DOMAIN = "ebay.com"
+    const val EBAY_CO_UK_DOMAIN = "ebay.co.uk"
+    const val EBAY_DE_DOMAIN = "ebay.de"
+    const val NETFLIX_DOMAIN = "netflix.com"
+    const val ALIEXPRESS_DOMAIN = "aliexpress.com"
+    const val BILIBILI_DOMAIN = "bilibili.com"
+    const val GEORIOT_TARGET_DOMAIN = "target.georiot.com"
+
+    // X / Twitter alternative frontends (catalog v2)
+    const val XCANCEL_DOMAIN = "xcancel.com"
+    const val NITTER_NET_DOMAIN = "nitter.net"
+    const val TWITTERVIEWER_DOMAIN = "twitterviewer.net"
+    const val NITTER_CATSARCH_DOMAIN = "nitter.catsarch.com"
+    const val NITTER_TIEKOETTER_DOMAIN = "nitter.tiekoetter.com"
+    const val NITTER_KAREEM_DOMAIN = "nitter.kareem.one"
+    const val NITTER_PRIVACYREDIRECT_DOMAIN = "nitter.privacyredirect.com"
+    const val NUKU_TRABUN_DOMAIN = "nuku.trabun.org"
+    const val TWIIIT_DOMAIN = "twiiit.com"
+    const val FARSIDE_DOMAIN = "farside.link"
+
+    // Instagram Kittygram experimental readers (catalog v2)
+    const val KITTYGRAM_DOMAIN = "kittygr.am"
+    const val KG_MEOWING_DOMAIN = "kg.meowing.de"
+    const val KITTYGRAM_KAREEM_DOMAIN = "kittygram.kareem.one"
+
+    // Bluesky alternative frontends (catalog v2)
+    const val SKYLIB_COFFEE_DOMAIN = "skylib.coffee"
+    const val SKYLIB_CATSARCH_DOMAIN = "skylib.catsarch.com"
+
+    // Reddit alternative frontends (catalog v2)
+    const val REDLIB_CATSARCH_DOMAIN = "redlib.catsarch.com"
+    const val REDLIB_PRIVACYREDIRECT_DOMAIN = "redlib.privacyredirect.com"
+    const val REDLIB_NADEKO_DOMAIN = "redlib.nadeko.net"
+    const val REDLIB_PRIVADENCY_DOMAIN = "redlib.privadency.com"
+    const val SAFEREDDIT_DOMAIN = "safereddit.com"
+    const val RED_ARTEMISLENA_DOMAIN = "red.artemislena.eu"
+    const val REDLIB_R4FO_DOMAIN = "redlib.r4fo.com"
+    const val REDLIB_COW_DOMAIN = "redlib.cow.rip"
+
+    // YouTube alternative frontends (catalog v2)
+    const val INV_NADEKO_DOMAIN = "inv.nadeko.net"
+    const val INVIDIOUS_NERDVPN_DOMAIN = "invidious.nerdvpn.de"
+
+    // Pinterest alternative frontends (catalog v2)
+    const val PINTEREST_BUNK_DOMAIN = "pinterest.bunk.im"
+
+    // Threads alternative frontends (catalog v2)
+    const val SHOELACE_MINT_DOMAIN = "shoelace.mint.lgbt"
+    const val LINKSYNERGY_CLICK_DOMAIN = "click.linksynergy.com"
+    
+    // URL path identifiers
+    const val TWITTER_STATUS_PATH = "/status/"
+
+    // Custom URL rule engine resource limits
+    const val MAX_INPUT_LENGTH = 2048
+    const val MAX_URL_SCAN_LENGTH = 1000
+    const val MAX_URL_LENGTH = 2048
+    const val MAX_CUSTOM_RULES = 200
+    const val MAX_RULE_PATTERN_LENGTH = 2048
+    const val MAX_RULE_REPLACEMENT_LENGTH = 4096
+    const val MAX_RULE_TEMPLATE_LENGTH = 4096
+    const val MAX_SCOPE_ENTRIES = 100
+    const val MAX_EXCLUDES_PER_RULE = 50
+    const val MAX_TEST_VECTORS_PER_RULE = 20
+    const val MAX_REGEX_PROGRAM_SIZE = 10_000
+    const val MAX_PIPELINE_REENTRIES = 5
+    const val MAX_TRACE_STEPS = 1000
+    const val MAX_CHANGE_OPERATIONS = 20
+    const val MAX_RULE_BUNDLE_BYTES = 1_048_576
+    const val MAX_LOCAL_BACKUP_BYTES = 2_097_152
+    const val RESTORE_ROLLBACK_FILE_NAME = "restore_rollback.json"
+    const val RESTORE_ROLLBACK_FORMAT = "untrack-restore-rollback"
+    const val RESTORE_ROLLBACK_SCHEMA_VERSION = 1
+    const val MIN_HISTORY_ENTRIES = 1
+    const val MAX_HISTORY_ENTRIES = 10_000
+    const val MAX_REMEMBERED_ROUTES = 100
+    const val MAX_RULE_SNAPSHOTS = 3
+
+    // Private Link Guard: high-confidence literal URL leak indicators only.
+    const val LEAK_MIN_TOKEN_VALUE_LENGTH = 8
+    const val MAX_LEAK_FINDINGS = 10
+
+    val LEAK_EMAIL_PATTERN = Regex(
+        "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"
+    )
+    val LEAK_JWT_PATTERN = Regex(
+        "eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+"
+    )
+    val LEAK_PRECISE_COORDINATE_PATTERN = Regex(
+        "[-+]?\\d+\\.\\d{4,}"
+    )
+    val LEAK_SENSITIVE_PARAM_NAMES = setOf(
+        "access_token",
+        "refresh_token",
+        "id_token",
+        "token",
+        "auth",
+        "authorization",
+        "auth_token",
+        "otp",
+        "one_time_code",
+        "reset",
+        "reset_token",
+        "password_reset_token",
+        "invite",
+        "invite_code",
+        "invitation_token",
+        "api_key",
+        "apikey",
+        "secret",
+        "client_secret",
+        "session",
+        "session_id",
+        "session_token",
+        "sessionid",
+        "signature",
+        "sig",
+        "private_token",
+        "share_token",
+        "confirmation_token",
+        "unlock_token",
+        "recovery_token",
+        "bearer"
+    )
+    /*
+     * Deliberately excluded: "code" (frequently a discount/region/article code),
+     * "key" (too generic), and "sid" (ambiguous service/session identifier).
+     * The guard favours high confidence over broad token detection.
+     */
+    val LEAK_LATITUDE_PARAM_NAMES = setOf("lat", "latitude")
+    val LEAK_LONGITUDE_PARAM_NAMES = setOf("lon", "lng", "longitude")
+
+    // Persisted in Room as conversionType — must never change or be localized.
+    const val HISTORY_CONVERSION_INPUT_REDACTED = "Input redacted"
+    
+    // Tag for logging
+    const val LOG_TAG = "Untrack"
+}
